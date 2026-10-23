@@ -1,0 +1,106 @@
+{
+    "best_model_name": "XGBoost Regressor",
+    "feature_columns": [
+        "building",
+        "zone",
+        "occupancy",
+        "temperature",
+        "humidity",
+        "hour",
+        "day_of_week",
+        "is_weekend",
+        "is_business_hours",
+        "cooling_need",
+        "hour_sin",
+        "hour_cos"
+    ],
+    "categorical_features": [
+        "building",
+        "zone"
+    ],
+    "numeric_features": [
+        "occupancy",
+        "temperature",
+        "humidity",
+        "hour",
+        "day_of_week",
+        "is_weekend",
+        "is_business_hours",
+        "cooling_need",
+        "hour_sin",
+        "hour_cos"
+    ],
+    "train_samples": 6912,
+    "test_samples": 1728,
+    "test_ratio": 0.2,
+    "regression_metrics": {
+        "Linear Regression (Baseline)": {
+            "Model": "Linear Regression (Baseline)",
+            "MAE (kW)": 3.257,
+            "RMSE (kW)": 5.644,
+            "R2 Score": 0.8922,
+            "MAPE (%)": 13.97
+        },
+        "Random Forest Regressor": {
+            "Model": "Random Forest Regressor",
+            "MAE (kW)": 2.126,
+            "RMSE (kW)": 5.405,
+            "R2 Score": 0.9011,
+            "MAPE (%)": 10.35
+        },
+        "XGBoost Regressor": {
+            "Model": "XGBoost Regressor",
+            "MAE (kW)": 2.099,
+            "RMSE (kW)": 5.317,
+            "R2 Score": 0.9043,
+            "MAPE (%)": 10.09
+        }
+    },
+    "waste_detection_metrics": {
+        "contextual_detector": {
+            "precision": 0.9318181818181818,
+            "recall": 1.0,
+            "f1_score": 0.9647058823529412,
+            "accuracy": 0.9982638888888888,
+            "confusion_matrix": [
+                [
+                    1684,
+                    3
+                ],
+                [
+                    0,
+                    41
+                ]
+            ],
+            "tp": 41,
+            "fp": 3,
+            "tn": 1684,
+            "fn": 0
+        },
+        "isolation_forest": {
+            "precision": 0.01282051282051282,
+            "recall": 0.024390243902439025,
+            "f1_score": 0.01680672268907563,
+            "accuracy": 0.9322916666666666,
+            "confusion_matrix": [
+                [
+                    1610,
+                    77
+                ],
+                [
+                    40,
+                    1
+                ]
+            ],
+            "tp": 1,
+            "fp": 77,
+            "tn": 1610,
+            "fn": 40
+        }
+    },
+    "default_thresholds": {
+        "residual_threshold_kw": 10.0,
+        "occupancy_threshold": 5,
+        "tariff_inr_per_kwh": 8.5
+    }
+}

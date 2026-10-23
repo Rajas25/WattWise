@@ -1,0 +1,4 @@
+Model,MAE (kW),RMSE (kW),R2 Score,MAPE (%)
+Linear Regression (Baseline),3.257,5.644,0.8922,13.97
+Random Forest Regressor,2.126,5.405,0.9011,10.35
+XGBoost Regressor,2.099,5.317,0.9043,10.09
