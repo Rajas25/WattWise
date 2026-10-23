@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Dashboard — WattWise Energy Detective</title>
+  <meta name="description" content="Student energy monitoring module — explore campus energy consumption, understand detected waste, and learn about energy-saving opportunities." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* Student-specific overrides */
+    .student-page body { background: var(--s-bg); }
+    body { background: var(--s-bg); }
+
+    /* Welcome banner */
+    .welcome-banner {
+      background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6) var(--space-8);
+      color: #fff;
+      margin-bottom: var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .welcome-text h2 { font-size: var(--text-xl); font-weight: var(--weight-bold); margin-bottom: var(--space-2); }
+    .welcome-text p  { font-size: var(--text-sm); opacity: 0.85; line-height: 1.6; max-width: 480px; }
+    .welcome-meta { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); flex-shrink: 0; }
+    .welcome-tag {
+      padding: var(--space-1) var(--space-3); background: rgba(255,255,255,0.15);
+      border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--weight-semibold);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Building cards */
+    .building-card {
+      background: #fff; border-radius: var(--radius-xl);
+      border: 1.5px solid var(--neutral-200); padding: var(--space-5);
+      transition: all var(--transition-base); cursor: pointer;
+    }
+    .building-card:hover { border-color: var(--s-accent); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .building-icon { font-size: 2rem; margin-bottom: var(--space-3); }
+    .building-name { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--s-primary); margin-bottom: var(--space-1); }
+    .building-type { font-size: var(--text-xs); color: var(--neutral-400); margin-bottom: var(--space-4); }
+    .building-stat { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-top: 1px solid var(--neutral-100); }
+    .bstat-label { font-size: var(--text-xs); color: var(--neutral-500); }
+    .bstat-val   { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--neutral-800); }
+    .bstat-val.danger { color: var(--color-danger); }
+
+    /* Alert list */
+    .alert-item {
+      display: flex; align-items: flex-start; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+      background: #fff; border: 1.5px solid var(--neutral-200);
+      margin-bottom: var(--space-2); transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+    .alert-item:hover { border-color: var(--s-accent); background: var(--s-selected-bg); }
+    .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .alert-dot.high   { background: #DC2626; }
+    .alert-dot.medium { background: #D97706; }
+    .alert-dot.low    { background: #059669; }
+    .alert-content { flex: 1; }
+    .alert-title  { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--neutral-800); margin-bottom: 2px; }
+    .alert-meta   { font-size: var(--text-xs); color: var(--neutral-500); }
+    .alert-loss   { font-size: var(--text-xs); font-weight: var(--weight-bold); color: var(--color-danger); flex-shrink: 0; }
+
+    /* Awareness panel */
+    .awareness-card {
+      background: linear-gradient(135deg, #EBF8F9 0%, #F1FAEE 100%);
+      border: 1.5px solid var(--s-accent); border-radius: var(--radius-xl);
+      padding: var(--space-5);
+    }
+    .awareness-item { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid rgba(168,218,220,0.3); }
+    .awareness-item:last-child { border-bottom: none; }
+    .awareness-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .awareness-text { font-size: var(--text-sm); color: var(--neutral-700); line-height: 1.6; }
+
+    /* Nav page sections */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* Energy Trends */
+    .trend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+    @media (max-width: 900px) { .trend-grid { grid-template-columns: 1fr; } }
+
+    /* Incident row */
+    .incident-row {
+      display: grid; grid-template-columns: 1.2fr 1fr 0.7fr 0.7fr 0.7fr 0.9fr 0.8fr;
+      gap: var(--space-2); align-items: center; padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--neutral-100); font-size: var(--text-sm);
+      cursor: pointer; transition: background var(--transition-fast);
+    }
+    .incident-row:hover { background: var(--neutral-50); }
+    .incident-row.header { font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--neutral-500); background: var(--neutral-50); cursor: default; }
+    @media (max-width: 768px) { .incident-row { grid-template-columns: 1fr 1fr; } .incident-row .hide-mobile { display: none; } }
+  </style>
+</head>
+<body class="student-page">
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- ══════════════ APP LAYOUT ══════════════ -->
+<div class="app-layout">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar sidebar--student" id="sidebar" role="navigation" aria-label="Student navigation">
+    <div class="sidebar-header">
+      <span class="sidebar-logo-icon">⚡</span>
+      <div>
+        <div class="sidebar-logo-text">WattWise</div>
+        <div class="sidebar-logo-sub">STUDENT MODULE</div>
+      </div>
+    </div>
+
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <button class="nav-item active" data-page="overview" id="nav-overview">
+        <span class="nav-item-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="10" height="10" x="3" y="3" rx="2"/><rect width="10" height="10" x="13" y="3" rx="2" opacity=".5"/><rect width="10" height="10" x="3" y="13" rx="2" opacity=".5"/><rect width="10" height="10" x="13" y="13" rx="2" opacity=".5"/></svg>
+        </span>
+        <span class="nav-item-text">Overview</span>
+      </button>
+      <button class="nav-item" data-page="explorer" id="nav-explorer">
+        <span class="nav-item-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </span>
+        <span class="nav-item-text">Campus Energy</span>
+      </button>
+      <button class="nav-item" data-page="buildings" id="nav-buildings">
+        <span class="nav-item-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </span>
+        <span class="nav-item-text">Buildings & Zones</span>
+      </button>
+      <button class="nav-item" data-page="waste" id="nav-waste">
+        <span class="nav-item-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </span>
+        <span class="nav-item-text">Detected Waste</span>
+        <span class="nav-item-badge" id="waste-badge">—</span>
+      </button>
+      <div class="sidebar-section-label">Insights</div>
+      <button class="nav-item" data-page="trends" id="nav-trends">
+        <span class="nav-item-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </span>
+        <span class="nav-item-text">Energy Trends</span>
+      </button>
+      <button class="nav-item" data-page="insights" id="nav-insights">
+        <span class="nav-item-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </span>
+        <span class="nav-item-text">Sustainability</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="admin-dashboard.html" class="sidebar-module-switcher">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 11H3M17 11L13 7M17 11L13 15"/></svg>
+        <span>Switch to Admin</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN AREA ═══ -->
+  <div class="main-area" id="main-area">
+
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open navigation">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="header-breadcrumb">
+          <span class="breadcrumb-parent">WattWise</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-current" id="breadcrumb-title">Overview</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-dataset-tag">
+          ⚠️ Simulated Campus Data
+        </div>
+        <div class="header-module-pill pill--student">Student</div>
+        <div class="header-avatar avatar--student" title="Student User">S</div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="page-content">
+
+      <!-- ════════════════════════════════════════════
+           PAGE: OVERVIEW (default)
+           ════════════════════════════════════════════ -->
+      <section id="page-overview" class="page-section active">
+        <!-- Welcome banner -->
+        <div class="welcome-banner">
+          <div class="welcome-text">
+            <h2>👋 Welcome to Your Campus Energy Dashboard</h2>
+            <p>Explore how campus electricity is being used and discover opportunities to reduce unnecessary consumption. All data shown is simulated for academic demonstration.</p>
+          </div>
+          <div class="welcome-meta">
+            <span class="welcome-tag">📅 Jan – Mar 2026</span>
+            <span class="welcome-tag">🏫 4 Campus Buildings</span>
+            <span class="welcome-tag">🤖 XGBoost Prediction Model</span>
+          </div>
+        </div>
+
+        <!-- Simulation notice -->
+        <div class="notice-banner sim mb-5" role="note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span><strong>Academic Simulation:</strong> This dashboard uses synthetic campus telemetry (8,640 hourly records, 90 days). Figures are illustrative — they do not represent verified readings from a real campus deployment.</span>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid-4 mb-6" id="overview-kpis">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Main Charts: 2-col -->
+        <div class="grid-2 mb-6">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">⚡ Actual vs. Expected Power (Last 14 Days)</div>
+                <div class="chart-card-sub">When the blue line rises above the dashed line, the building used more power than expected</div>
+              </div>
+            </div>
+            <div style="height:260px;position:relative"><canvas id="chart-actual-pred"></canvas></div>
+            <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--s-selected-bg);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--neutral-600);line-height:1.5">
+              <span>🔵 <strong>Solid line</strong> = actual power used</span>
+              <span>-- <strong>Dashed line</strong> = what the AI predicted</span>
+              <span>📐 <strong>Gap = residual</strong> (possible waste if nobody is present)</span>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">🕒 When Does Each Building Use the Most Power?</div>
+                <div class="chart-card-sub">Average electricity use by hour of day — higher = more power</div>
+              </div>
+            </div>
+            <div style="height:260px;position:relative"><canvas id="chart-hourly"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Building Cards -->
+        <h2 class="page-title mb-4" style="font-size:var(--text-xl)">🏢 Campus Buildings</h2>
+        <div class="grid-4 mb-6" id="building-cards"></div>
+
+        <!-- 2-col: Recent Alerts + Awareness -->
+        <div class="grid-2">
+          <div>
+            <h2 class="page-title mb-3" style="font-size:var(--text-xl)">🚨 Latest Waste Alerts
+              <span style="font-size:var(--text-xs);font-weight:500;color:var(--neutral-400);margin-left:var(--space-2)">(click any row for details)</span>
+            </h2>
+            <div style="font-size:var(--text-xs);color:var(--neutral-500);margin-bottom:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--neutral-50);border-radius:var(--radius-md);border:1px solid var(--neutral-200)">
+              🔴 <strong>High</strong> = lot of excess power · 🟡 <strong>Medium</strong> = moderate · 🟢 <strong>Low</strong> = small amount
+            </div>
+            <div id="recent-alerts"></div>
+          </div>
+          <div>
+            <h2 class="page-title mb-4" style="font-size:var(--text-xl)">💡 Quick Facts About This Campus</h2>
+            <div class="awareness-card">
+              <div class="awareness-item">
+                <span class="awareness-icon">🌙</span>
+                <p class="awareness-text">We detected electricity being used in the middle of the night when nobody was in the buildings. This might be lights, ACs, or computers that were left on.</p>
+              </div>
+              <div class="awareness-item">
+                <span class="awareness-icon">🔬</span>
+                <p class="awareness-text">The Science Complex was flagged most often for waste. Lab equipment may have been left running after hours or during weekends.</p>
+              </div>
+              <div class="awareness-item">
+                <span class="awareness-icon">🔍</span>
+                <p class="awareness-text">These are <em>predictions</em> by the WattWise AI — they show where waste is likely but need to be confirmed in person before taking action.</p>
+              </div>
+              <div class="awareness-item">
+                <span class="awareness-icon">✅</span>
+                <p class="awareness-text">Server rooms staying on 24/7 is <em>expected</em> — not all high usage is waste! WattWise only flags cases where usage is high AND the space is empty.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════
+           PAGE: CAMPUS ENERGY EXPLORER
+           ════════════════════════════════════════════ -->
+      <section id="page-explorer" class="page-section">
+        <h1 class="page-title">⚡ Campus Energy Explorer</h1>
+        <p class="page-sub">Explore electricity consumption patterns by building, zone, and time period.</p>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label" for="exp-building">Building</label>
+            <select class="filter-select" id="exp-building">
+              <option>All Buildings</option>
+              <option>Academic Block A</option>
+              <option>Library &amp; Computing Hub</option>
+              <option>Science Complex</option>
+              <option>Administrative Block</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="exp-zone">Zone</label>
+            <select class="filter-select" id="exp-zone">
+              <option>All Zones</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="exp-from">From</label>
+            <input type="date" class="filter-input" id="exp-from" value="2026-01-01" />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="exp-to">To</label>
+            <input type="date" class="filter-input" id="exp-to" value="2026-03-31" />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="exp-daytype">Day Type</label>
+            <select class="filter-select" id="exp-daytype">
+              <option value="all">All Days</option>
+              <option value="weekday">Weekdays Only</option>
+              <option value="weekend">Weekends Only</option>
+            </select>
+          </div>
+          <button class="filter-reset" id="exp-reset">↺ Reset</button>
+        </div>
+
+        <!-- Summary KPIs -->
+        <div class="grid-4 mb-5" id="exp-kpis"></div>
+
+        <!-- Charts -->
+        <div class="grid-2 mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📈 Actual vs. Predicted (Daily Average)</div></div>
+            <div style="height:280px;position:relative"><canvas id="chart-exp-daily"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📊 Power Consumption Distribution</div></div>
+            <div style="height:280px;position:relative"><canvas id="chart-exp-dist"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card mb-5">
+          <div class="chart-card-header"><div class="chart-card-title">🕒 Hourly Consumption Profile</div></div>
+          <div style="height:260px;position:relative"><canvas id="chart-exp-hourly"></canvas></div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════
+           PAGE: BUILDINGS & ZONES
+           ════════════════════════════════════════════ -->
+      <section id="page-buildings" class="page-section">
+        <h1 class="page-title">🏢 Buildings & Zones</h1>
+        <p class="page-sub">Four simulated campus facilities. Click any building to explore its energy analytics.</p>
+        <div class="grid-2 mb-6" id="buildings-detail-grid"></div>
+        <div id="building-detail-panel" style="display:none">
+          <h2 class="page-title mb-4" style="font-size:var(--text-xl)" id="building-detail-name"></h2>
+          <div class="grid-4 mb-5" id="building-detail-kpis"></div>
+          <div class="grid-2">
+            <div class="chart-card">
+              <div class="chart-card-header"><div class="chart-card-title">📈 Actual vs. Predicted (7-Day)</div></div>
+              <div style="height:250px;position:relative"><canvas id="chart-bldg-trend"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header"><div class="chart-card-title">👥 Occupancy vs. Power</div></div>
+              <div style="height:250px;position:relative"><canvas id="chart-bldg-occ"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════
+           PAGE: DETECTED WASTE
+           ════════════════════════════════════════════ -->
+      <section id="page-waste" class="page-section">
+        <h1 class="page-title">🔍 Energy Waste Incidents</h1>
+        <p class="page-sub">These are times when a building used <strong>much more electricity than expected</strong> while very few people were present. Click any row to see the full breakdown.</p>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label" for="waste-building">Building</label>
+            <select class="filter-select" id="waste-building">
+              <option>All Buildings</option>
+              <option>Academic Block A</option>
+              <option>Library &amp; Computing Hub</option>
+              <option>Science Complex</option>
+              <option>Administrative Block</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="waste-severity">Severity</label>
+            <select class="filter-select" id="waste-severity">
+              <option value="all">All Severities</option>
+              <option value="High Waste">High Waste</option>
+              <option value="Medium Waste">Medium Waste</option>
+              <option value="Low Waste">Low Waste</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="waste-sort">Sort By</label>
+            <select class="filter-select" id="waste-sort">
+              <option value="excess">Excess kW (desc)</option>
+              <option value="cost">Financial Loss (desc)</option>
+              <option value="time">Timestamp (desc)</option>
+            </select>
+          </div>
+          <button class="filter-reset" id="waste-reset">↺ Reset</button>
+        </div>
+
+        <div class="grid-4 mb-5" id="waste-kpis"></div>
+
+        <!-- Incident table -->
+        <div class="data-table-wrap">
+          <div class="incident-row header">
+            <div>Timestamp</div>
+            <div>Building / Zone</div>
+            <div class="hide-mobile">Occupancy</div>
+            <div class="hide-mobile">Actual kW</div>
+            <div class="hide-mobile">Expected kW</div>
+            <div>Severity</div>
+            <div>Est. Loss</div>
+          </div>
+          <div id="waste-table-body"></div>
+        </div>
+        <div id="waste-pagination" style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--neutral-500)"></div>
+      </section>
+
+      <!-- ════════════════════════════════════════════
+           PAGE: ENERGY TRENDS
+           ════════════════════════════════════════════ -->
+      <section id="page-trends" class="page-section">
+        <h1 class="page-title">📈 Energy Trends & Insights</h1>
+        <p class="page-sub">Consumption patterns, waste over time, and financial impact — 90-day simulated campus dataset.</p>
+        <div class="trend-grid mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📅 90-Day Energy Trend (Actual vs. Expected)</div></div>
+            <div style="font-size:var(--text-xs);color:var(--neutral-500);margin-bottom:var(--space-3)">Blue = real usage, dashed = AI prediction. When blue is much higher, excess energy was used.</div>
+            <div style="height:260px;position:relative"><canvas id="chart-trends-daily"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">🏖️ Are Weekends Using Too Much Power?</div></div>
+            <div style="font-size:var(--text-xs);color:var(--neutral-500);margin-bottom:var(--space-3)">If weekend power is close to weekday levels, energy may be wasted when buildings are empty.</div>
+            <div style="height:260px;position:relative"><canvas id="chart-trends-wdwe"></canvas></div>
+          </div>
+        </div>
+        <div class="trend-grid mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">🏢 Which Building Uses the Most Energy?</div></div>
+            <div style="font-size:var(--text-xs);color:var(--neutral-500);margin-bottom:var(--space-3)">Share of total campus electricity used by each building over 90 days.</div>
+            <div style="height:260px;position:relative"><canvas id="chart-trends-buildings"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">💸 Estimated Wasted Money Each Week</div></div>
+            <div style="font-size:var(--text-xs);color:var(--neutral-500);margin-bottom:var(--space-3)">Estimated cost of energy wasted each week at ₹8.50/kWh. This is an approximation, not a real utility bill.</div>
+            <div style="height:260px;position:relative"><canvas id="chart-trends-cost"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════
+           PAGE: SUSTAINABILITY INSIGHTS
+           ════════════════════════════════════════════ -->
+      <section id="page-insights" class="page-section">
+        <h1 class="page-title">🌱 What's Being Wasted & How To Help?</h1>
+        <p class="page-sub">Plain-English insights from the energy model — plus simple ways you can help reduce campus electricity waste.</p>
+        <div id="insights-content"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ INCIDENT DRAWER ═══ -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="incident-drawer" id="incident-drawer" aria-label="Incident details" role="complementary">
+  <div class="drawer-header">
+    <span class="drawer-title">🔍 Incident Details</span>
+    <button class="drawer-close" id="drawer-close" aria-label="Close incident details">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer-content"></div>
+</aside>
+
+
+<script src="js/api.js"></script>
+<script src="js/dashboard-init.js"></script>
+<script src="js/data.js"></script>
+<script src="js/student.js"></script>
+<script>
+/* ── API Data Integration ── */
+(async function loadStudentApiData() {
+  try {
+    // Verify token is valid against the backend
+    await WW.authApi.me();
+
+    // Load dashboard KPIs
+    const kpi = await WW.energyApi.dashboard(null, 30);
+    if (kpi) {
+      // Update any elements that have data-kpi attributes (added to HTML)
+      document.querySelectorAll('[data-kpi="waste-incidents"]').forEach(el => {
+        el.textContent = kpi.waste_incidents?.toLocaleString('en-IN') || '0';
+      });
+      document.querySelectorAll('[data-kpi="excess-inr"]').forEach(el => {
+        el.textContent = WW.formatINR(kpi.excess_cost_inr || 0);
+      });
+      document.querySelectorAll('[data-kpi="total-kwh"]').forEach(el => {
+        el.textContent = WW.formatKWh(kpi.total_kwh || 0);
+      });
+      document.querySelectorAll('[data-kpi="unread-alerts"]').forEach(el => {
+        el.textContent = kpi.unread_alerts || '0';
+      });
+    }
+
+    // Run ML analysis to populate anomalies
+    WW.mlApi.analyze('', 30).catch(() => {});
+
+    // Render API-backed charts if canvases exist
+    await renderDailyTrendChart('api-daily-chart', null, 30);
+    await renderHourlyProfileChart('api-hourly-chart', null, 30);
+    await renderBuildingStatsChart('api-building-chart', 30);
+
+    // Load waste table
+    await loadWasteTable('api-waste-tbody', null, 30, 50);
+
+    // Load alerts
+    await loadAlerts('api-alerts-container', 10);
+
+  } catch (err) {
+    // Not a fatal error — existing JS data still renders
+    console.warn('[WattWise API] Falling back to simulated JS data:', err.message);
+  }
+})();
+</script>
+</body>
+</html>
+

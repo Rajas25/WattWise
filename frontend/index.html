@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WattWise — Building Energy Waste Detective</title>
+  <meta name="description" content="An intelligent campus energy analytics platform that predicts expected electricity consumption, detects suspicious usage in low-occupancy buildings, and estimates avoidable energy costs in Indian Rupees." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/landing.css" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+</head>
+<body class="landing-body">
+
+  <!-- ═══════════════════════════ NAVIGATION ═══════════════════════════ -->
+  <nav class="landing-nav" id="main-nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo" aria-label="WattWise Home">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">WattWise</span>
+        <span class="logo-sub">Energy Detective</span>
+      </a>
+      <ul class="nav-links" role="list">
+        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#analytics" class="nav-link">Analytics</a></li>
+        <li><a href="#about" class="nav-link">About</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="auth.html" class="btn btn-ghost" id="nav-login-btn">Login</a>
+        <a href="auth.html" class="btn btn-primary" id="nav-get-started-btn">Get Started</a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile-menu" id="nav-mobile-menu" role="menu">
+      <a href="#how-it-works" class="nav-mobile-link" role="menuitem">How It Works</a>
+      <a href="#features" class="nav-mobile-link" role="menuitem">Features</a>
+      <a href="#analytics" class="nav-mobile-link" role="menuitem">Analytics</a>
+      <a href="#about" class="nav-mobile-link" role="menuitem">About</a>
+      <a href="auth.html" class="btn btn-primary nav-mobile-cta" role="menuitem">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+  <section class="hero" aria-label="Hero section">
+    <div class="hero-bg-grid"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>Academic ML Project — Simulated Campus Data</span>
+        </div>
+        <h1 class="hero-headline">
+          Find the Energy You're<br />
+          <span class="headline-gradient">Wasting.</span> Turn Insights<br />
+          Into <span class="headline-gradient">Savings.</span>
+        </h1>
+        <p class="hero-subtext">
+          An intelligent campus energy analytics platform that predicts expected electricity
+          consumption, detects suspicious usage in low-occupancy buildings, and estimates
+          avoidable energy costs — powered by XGBoost and contextual ML.
+        </p>
+        <div class="hero-actions">
+          <a href="auth.html" class="btn btn-primary btn-xl" id="hero-explore-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Explore Energy Dashboard
+          </a>
+          <a href="#how-it-works" class="btn btn-outline btn-xl" id="hero-how-btn">
+            Discover How It Works
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="stat-value">8,640</span>
+            <span class="stat-label">Telemetry Records</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="stat-value">90 Days</span>
+            <span class="stat-label">Simulated Campus Data</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="stat-value">R² 0.9043</span>
+            <span class="stat-label">XGBoost Accuracy</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="stat-value">F1: 0.9647</span>
+            <span class="stat-label">Detection Score</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Preview Card -->
+      <div class="hero-preview" aria-label="Dashboard preview (illustrative)">
+        <div class="preview-label">
+          <span class="badge-dot-amber"></span>
+          Sample Dashboard Preview — Illustrative Data
+        </div>
+        <div class="preview-card">
+          <div class="preview-header">
+            <span class="preview-title">⚡ Campus Energy Overview</span>
+            <span class="preview-period">Mar 2026 · All Buildings</span>
+          </div>
+          <div class="preview-kpis">
+            <div class="preview-kpi">
+              <div class="pkpi-label">Total Energy</div>
+              <div class="pkpi-value blue">1,24,820 kWh</div>
+            </div>
+            <div class="preview-kpi">
+              <div class="pkpi-label">Waste Incidents</div>
+              <div class="pkpi-value red">247</div>
+            </div>
+            <div class="preview-kpi">
+              <div class="pkpi-label">Excess Energy</div>
+              <div class="pkpi-value amber">3,481 kWh</div>
+            </div>
+            <div class="preview-kpi">
+              <div class="pkpi-label">Est. Financial Loss</div>
+              <div class="pkpi-value red">₹ 29,589</div>
+            </div>
+          </div>
+          <div class="preview-chart" aria-hidden="true">
+            <canvas id="previewChart" width="520" height="140"></canvas>
+          </div>
+          <div class="preview-alert">
+            <span class="alert-dot"></span>
+            <strong>Waste Detected:</strong> Science Complex · Empty Lab · 2:00 AM · +18.4 kW excess · Est. ₹156.40 loss
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ PROBLEM STATEMENT ═══════════════════════════ -->
+  <section class="problem-section" id="problem" aria-label="Problem statement">
+    <div class="container">
+      <div class="section-label">The Problem</div>
+      <h2 class="section-title">Where Campus Energy Goes to Waste</h2>
+      <p class="section-sub">Traditional energy systems use static thresholds — they can't tell the difference between a packed auditorium at peak heat and an empty classroom at 2 AM. Both might draw 50 kW, but only one is waste.</p>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-icon">💡</div>
+          <h3>Lights Left On Overnight</h3>
+          <p>Classrooms and offices with projectors, computers, and lighting systems running through the night and on weekends with zero occupancy.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">❄️</div>
+          <h3>AC Running in Empty Halls</h3>
+          <p>Air conditioning systems running at full cooling capacity in completely empty lecture halls — often triggered by timers that don't account for schedule changes.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">🔬</div>
+          <h3>Lab Equipment During Holidays</h3>
+          <p>Chemistry and biology laboratory equipment operating continuously during semester breaks, consuming kilowatts with no productive output.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">📅</div>
+          <h3>Weekend Overconsumption</h3>
+          <p>Server rooms, refrigeration units, and standby loads running at weekday levels through Saturday and Sunday with minimal to no occupancy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ HOW IT WORKS ═══════════════════════════ -->
+  <section class="how-section" id="how-it-works" aria-label="How the system works">
+    <div class="container">
+      <div class="section-label">Methodology</div>
+      <h2 class="section-title">How the Waste Detective Works</h2>
+      <p class="section-sub">A five-step ML pipeline that combines physics-informed feature engineering with contextual anomaly detection.</p>
+      <div class="steps-wrapper">
+        <div class="step-connector" aria-hidden="true"></div>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-number">01</div>
+            <div class="step-icon">📡</div>
+            <h3>Collect Telemetry</h3>
+            <p>Gather hourly campus data: occupancy headcount, outdoor temperature & humidity, timestamp, and actual power consumption (kW) per building zone.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">02</div>
+            <div class="step-icon">⚙️</div>
+            <h3>Engineer Features</h3>
+            <p>Create physics-driven features: cooling degree demand, business-hours flag, cyclical sin/cos hour encoding, weekend indicators, and one-hot building encoding.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">03</div>
+            <div class="step-icon">🤖</div>
+            <h3>Predict Expected Load</h3>
+            <p>XGBoost Regressor (R² = 0.9043) trained on chronological 80% split predicts what power consumption <em>should</em> be given context — no future data leakage.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">04</div>
+            <div class="step-icon">🔍</div>
+            <h3>Detect Waste Contextually</h3>
+            <p>Flag an incident only when: <strong>Residual ≥ 10 kW</strong> AND <strong>Occupancy ≤ 5 people</strong>. This dual condition eliminates false alarms from legitimate high-load events.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">05</div>
+            <div class="step-icon">₹</div>
+            <h3>Estimate Financial Impact</h3>
+            <p>Excess Energy = Residual kW × 1 hour. Financial Loss = Excess kWh × ₹8.50/kWh tariff. Actionable estimates, transparently calculated.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ FEATURES ═══════════════════════════ -->
+  <section class="features-section" id="features" aria-label="Key features">
+    <div class="container">
+      <div class="section-label">Capabilities</div>
+      <h2 class="section-title">Everything You Need to Investigate Energy Waste</h2>
+      <div class="features-grid">
+        <div class="feature-card feature-card--primary">
+          <div class="feature-icon-wrap blue">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <h3>Expected Power Prediction</h3>
+          <p>XGBoost, Random Forest, and Linear Regression benchmarked with strict chronological splits. No data leakage. MAE as low as 2.099 kW.</p>
+          <div class="feature-tag">ML Regression</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap teal">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <h3>Contextual Waste Detection</h3>
+          <p>Dual-condition detection: excess residual + low occupancy. F1-score of 0.9647 vs Isolation Forest's 0.0168.</p>
+          <div class="feature-tag">Anomaly Detection</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap purple">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+          <h3>Building-Level Analytics</h3>
+          <p>Drill down into Academic Block A, Library & Computing Hub, Science Complex, and Administrative Block with zone-level granularity.</p>
+          <div class="feature-tag">Multi-Building</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap amber">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3>Financial Loss Estimation</h3>
+          <p>Excess kWh × ₹8.50/kWh tariff. Transparent formula, shown per-incident and aggregated by building, zone, and period.</p>
+          <div class="feature-tag">₹ INR Impact</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap green">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>ML Model Benchmarking</h3>
+          <p>Side-by-side comparison of MAE, RMSE, R², and MAPE for all regression models. Plus confusion matrices for anomaly detectors.</p>
+          <div class="feature-tag">Model Evaluation</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap rose">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <h3>Interactive Visualizations</h3>
+          <p>Time-series actual vs. predicted charts, waste heatmaps, building comparisons, occupancy correlations, and financial trend analysis.</p>
+          <div class="feature-tag">Charts & Reports</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ ANALYTICS PREVIEW ═══════════════════════════ -->
+  <section class="analytics-section" id="analytics" aria-label="Analytics preview">
+    <div class="container">
+      <div class="section-label">Two Modules</div>
+      <h2 class="section-title">Choose Your View</h2>
+      <p class="section-sub">One unified platform. Two purpose-built experiences.</p>
+      <div class="modules-grid">
+        <div class="module-card module-card--student">
+          <div class="module-badge">Student Module</div>
+          <div class="module-theme-preview student-preview">
+            <div class="mp-nav">
+              <div class="mp-nav-dot"></div><div class="mp-nav-dot"></div><div class="mp-nav-dot"></div>
+            </div>
+            <div class="mp-kpis">
+              <div class="mp-kpi s-blue"><div class="mp-kpi-v">1,248 kWh</div><div class="mp-kpi-l">Today's Usage</div></div>
+              <div class="mp-kpi s-mint"><div class="mp-kpi-v">12</div><div class="mp-kpi-l">Waste Alerts</div></div>
+            </div>
+            <div class="mp-bar-chart" aria-hidden="true">
+              <div class="mp-bar" style="height:60%"></div><div class="mp-bar" style="height:80%"></div>
+              <div class="mp-bar" style="height:45%"></div><div class="mp-bar mp-bar--accent" style="height:90%"></div>
+              <div class="mp-bar" style="height:70%"></div><div class="mp-bar" style="height:55%"></div>
+              <div class="mp-bar" style="height:65%"></div>
+            </div>
+          </div>
+          <h3>Student Energy Monitoring</h3>
+          <p>Explore campus energy patterns, understand detected waste incidents, and learn about energy-saving opportunities. Clean, approachable, educational.</p>
+          <ul class="module-features">
+            <li>🏫 Campus energy overview</li>
+            <li>🔍 Detected waste explorer</li>
+            <li>📊 Energy trends & insights</li>
+            <li>🏢 Building directory</li>
+          </ul>
+          <a href="student-dashboard.html" class="btn btn-student btn-lg" id="open-student-btn">Open Student Dashboard</a>
+        </div>
+
+        <div class="module-card module-card--admin">
+          <div class="module-badge module-badge--admin">Admin Module</div>
+          <div class="module-theme-preview admin-preview">
+            <div class="mp-nav">
+              <div class="mp-nav-dot admin-dot"></div><div class="mp-nav-dot admin-dot"></div><div class="mp-nav-dot admin-dot"></div>
+            </div>
+            <div class="mp-kpis">
+              <div class="mp-kpi a-purple"><div class="mp-kpi-v">₹29,589</div><div class="mp-kpi-l">Est. Loss</div></div>
+              <div class="mp-kpi a-amber"><div class="mp-kpi-v">247</div><div class="mp-kpi-l">Incidents</div></div>
+            </div>
+            <div class="mp-table-preview" aria-hidden="true">
+              <div class="mp-table-row mp-table-header"><span>Building</span><span>Excess kWh</span><span>₹ Loss</span></div>
+              <div class="mp-table-row"><span>Academic A</span><span>842</span><span class="amber-text">₹7,157</span></div>
+              <div class="mp-table-row"><span>Science Lab</span><span>1,124</span><span class="amber-text">₹9,554</span></div>
+              <div class="mp-table-row"><span>Library Hub</span><span>634</span><span class="amber-text">₹5,389</span></div>
+            </div>
+          </div>
+          <h3>Administrator Analytics</h3>
+          <p>Analyze anomalies, investigate excess power consumption, compare model performance, and review estimated financial losses. Dense, precise, powerful.</p>
+          <ul class="module-features">
+            <li>📉 Financial impact analysis</li>
+            <li>🤖 ML model benchmarking</li>
+            <li>🔬 Incident investigation</li>
+            <li>🗄️ Dataset & data quality</li>
+          </ul>
+          <a href="admin-dashboard.html" class="btn btn-admin btn-lg" id="open-admin-btn">Open Admin Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ ABOUT / TRANSPARENCY ═══════════════════════════ -->
+  <section class="about-section" id="about" aria-label="About the project">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-content">
+          <div class="section-label">Transparency First</div>
+          <h2 class="section-title">About This Project</h2>
+          <p>WattWise is an academic Machine Learning mini-project. The dataset is <strong>synthetically simulated</strong> — not live campus sensor data. Ground-truth anomaly labels exist solely for evaluation and are never passed as features.</p>
+          <p>The system demonstrates a methodology for detecting energy waste in institutional buildings. It does not make guarantees about real-world savings or integrate with live IoT systems.</p>
+          <div class="about-notice">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span><strong>Academic Simulation Notice:</strong> All figures shown are derived from synthetic telemetry generated using thermodynamics equations and occupancy distributions. Results demonstrate methodology, not verified campus readings.</span>
+          </div>
+          <div class="tech-stack">
+            <span class="tech-badge">Python 3.11</span>
+            <span class="tech-badge">XGBoost</span>
+            <span class="tech-badge">Scikit-Learn</span>
+            <span class="tech-badge">Pandas</span>
+            <span class="tech-badge">Streamlit</span>
+            <span class="tech-badge">NumPy</span>
+          </div>
+        </div>
+        <div class="about-metrics">
+          <div class="metric-highlight">
+            <div class="mh-icon">🎯</div>
+            <div class="mh-content">
+              <div class="mh-value">F1: 0.9647</div>
+              <div class="mh-label">Contextual Detector on Test Set</div>
+            </div>
+          </div>
+          <div class="metric-highlight">
+            <div class="mh-icon">📊</div>
+            <div class="mh-content">
+              <div class="mh-value">R²: 0.9043</div>
+              <div class="mh-label">XGBoost Power Prediction</div>
+            </div>
+          </div>
+          <div class="metric-highlight">
+            <div class="mh-icon">🔒</div>
+            <div class="mh-content">
+              <div class="mh-value">Zero Leakage</div>
+              <div class="mh-label">Strict Chronological Train/Test Split</div>
+            </div>
+          </div>
+          <div class="metric-highlight">
+            <div class="mh-icon">🏢</div>
+            <div class="mh-content">
+              <div class="mh-value">4 Buildings</div>
+              <div class="mh-label">Academic, Library, Science, Admin</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+  <footer class="landing-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="nav-logo">
+            <span class="logo-icon">⚡</span>
+            <span class="logo-text">WattWise</span>
+          </div>
+          <p>Building Energy Waste Detective — ML-Based Energy Anomaly Detection for University Campuses.</p>
+          <p class="footer-disclaimer">Academic mini-project. Simulated data. Not connected to live sensors.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Application</h4>
+          <a href="student-dashboard.html">Student Dashboard</a>
+          <a href="admin-dashboard.html">Admin Dashboard</a>
+          <a href="auth.html">Login / Module Select</a>
+        </div>
+        <div class="footer-links">
+          <h4>Methodology</h4>
+          <a href="#how-it-works">How It Works</a>
+          <a href="admin-dashboard.html#models">Model Benchmarks</a>
+          <a href="admin-dashboard.html#dataset">Dataset Overview</a>
+        </div>
+        <div class="footer-links">
+          <h4>Technology Stack</h4>
+          <a href="#">Python 3.11 + XGBoost</a>
+          <a href="#">Scikit-Learn Pipeline</a>
+          <a href="#">Streamlit Dashboard</a>
+          <a href="#">Synthetic Telemetry</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 WattWise — Building Energy Waste Detective · Academic ML Mini-Project</span>
+        <span>Tariff: ₹8.50/kWh · Dataset: 8,640 synthetic records · 90 days</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/landing.js"></script>
+</body>
+</html>

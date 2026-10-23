@@ -1,265 +1,379 @@
-# Building Energy Waste Detective: ML-Based Energy Anomaly Detection
+# ⚡ WattWise — ML-Based Campus Energy Waste Detection & Analytics
 
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-red.svg)](https://streamlit.io/)
-[![Scikit-Learn](https://img.shields.io/badge/ML-Scikit--Learn-orange.svg)](https://scikit-learn.org/)
-[![XGBoost](https://img.shields.io/badge/Ensemble-XGBoost-green.svg)](https://xgboost.ai/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)](https://fastapi.tiangolo.com)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-07405E)](https://sqlite.org)
+[![Tests](https://img.shields.io/badge/Tests-52%20passing-brightgreen)](#7-run-tests)
 
-An academic Machine Learning mini-project designed to detect, quantify, and financially evaluate electricity waste across university campus buildings using supervised regression baselines and physics-informed contextual anomaly detection.
+> **Detect Waste. Reduce Costs. Build a Smarter Campus.**
 
----
+WattWise is a fully local, zero-cost academic ML project that detects, quantifies, and
+financially evaluates electricity waste in university campus buildings.
 
-## 📌 1. Problem Statement & Motivation
-
-Educational institutions and commercial buildings consume significant electricity, a large portion of which is inadvertently wasted due to:
-- Lighting, projectors, and computers left powered on overnight or on weekends.
-- HVAC (Air Conditioning) systems running at full cooling capacity in completely unoccupied lecture halls and classrooms.
-- Equipment left running continuously in laboratories during semester breaks or holidays.
-
-Traditional energy management systems rely on simple, static threshold rules (e.g., alert if power > 50 kW). These static rules fail because power draw fluctuates naturally with weather (ambient temperature/humidity) and occupancy. A high power draw is **justified** when an auditorium holds 100 students on a 36°C afternoon, but is **blatant waste** when observed in an empty classroom at 2:00 AM on Sunday.
-
-### Core Project Objective
-To develop an end-to-end Machine Learning pipeline that:
-1. **Predicts Expected Power Consumption**: Models expected campus load as a function of weather, occupancy, time of day, and building type.
-2. **Detects Actionable Energy Waste**: Isolates situations where actual power consumption significantly exceeds predicted expected power **and** space occupancy is zero or negligible.
-3. **Quantifies Real Financial Impact**: Computes excess kilowatt-hours (kWh) and estimates financial loss in Indian Rupees (₹ INR).
-4. **Compares Detection Methodologies**: Benchmarks the contextual ML residual detector against an unsupervised **Isolation Forest** baseline to highlight why generic outlier detectors are inadequate for energy waste auditing.
+**⚠️ Simulated Data Notice:** All campus telemetry is generated locally by the simulator.
+No real energy meters or external services are required or connected.
 
 ---
 
-## 🏗️ 2. System Architecture & Methodology
+## Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [Architecture](#2-architecture)
+3. [Technology Stack](#3-technology-stack)
+4. [Directory Structure](#4-directory-structure)
+5. [Prerequisites](#5-prerequisites)
+6. [Quick Start (All-in-One)](#6-quick-start)
+7. [Run Tests](#7-run-tests)
+8. [Create First Admin Account](#8-create-first-admin-account)
+9. [API Documentation](#9-api-documentation)
+10. [Authentication & Roles](#10-authentication--roles)
+11. [ML Pipeline](#11-ml-pipeline)
+12. [Known Limitations](#12-known-limitations)
+
+---
+
+## 1. Project Overview
+
+WattWise detects electricity waste by:
+1. **Predicting** expected power from weather, occupancy, and time.
+2. **Flagging** cases where actual power exceeds the prediction *and* the building is unoccupied.
+3. **Quantifying** financial impact in ₹ INR.
+4. **Comparing** a contextual ML detector against Isolation Forest to show why domain-context matters.
+
+**Best model:** XGBoost Regressor — R²=0.9038, MAE=2.106 kW on held-out test data.
+**Detection:** F1=0.9647 vs. Isolation Forest F1=0.0168.
+
+---
+
+## 2. Architecture
 
 ```
-┌────────────────────────────────┐
-│   Campus Telemetry / Dataset   │
-│   (Weather, Occupancy, Time)   │
-└───────────────┬────────────────┘
-                │
-                ▼
-┌────────────────────────────────┐
-│     Feature Engineering        │
-│ (Cooling Need, Business Hours, │
-│  Sin/Cos Cyclical Hour, One-Hot│
-└───────────────┬────────────────┘
-                │
-                ▼
-┌────────────────────────────────┐
-│  Chronological Train/Test Split│
-│     (Strict Zero-Leakage)      │
-└───────────────┬────────────────┘
-                │
-        ┌───────┴────────────────────────┐
-        ▼                                ▼
-┌─────────────────────────┐   ┌────────────────────────┐
-│  Supervised Regression  │   │   Unsupervised Baseline│
-│ (Linear, RF, XGBoost)   │   │   (Isolation Forest)   │
-└───────────┬─────────────┘   └───────────┬────────────┘
-            │ Predicted Baseline (kW)     │
-            ▼                             │
-┌─────────────────────────┐               │
-│ Residual Error (e = y - ŷ)              │
-└───────────┬─────────────┘               │
-            │                             │
-            ▼                             │
-┌───────────────────────────────────┐     │
-│ Contextual Waste Gatekeeper       │     │
-│ (Residual >= Threshold AND        │     │
-│  Occupancy <= Limit)              │     │
-└───────────┬───────────────────────┘     │
-            │                             │
-            ▼                             ▼
-┌──────────────────────────────────────────────┐
-│  Financial Loss (INR ₹) & Waste Analytics    │
-│  Interactive Streamlit Multi-Tab Dashboard   │
-└──────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│   Simulated Campus Telemetry            │
+│   (backend/services/simulator.py)       │
+└────────────────┬────────────────────────┘
+                 │  POST /api/energy/readings
+                 ▼
+┌─────────────────────────────────────────┐
+│   FastAPI Backend  (backend/main.py)    │
+│   • /api/auth/*   — JWT authentication  │
+│   • /api/energy/* — readings, dashboard │
+│   • /api/ml/*     — predictions         │
+│   • /api/admin/*  — admin operations    │
+│   • /api/users/*  — user management     │
+└──────────┬──────────────────┬───────────┘
+           │                  │
+    ┌──────▼──────┐   ┌───────▼────────┐
+    │  SQLite DB  │   │ ML Models      │
+    │  wattwise.db│   │ XGBoost + IsoF │
+    └─────────────┘   └────────────────┘
+           │
+    ┌──────▼─────────────────────────────┐
+    │  Static HTML/CSS/JS Frontend       │
+    │  Served at http://localhost:8000   │
+    │  Student & Admin dashboards        │
+    └────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 3. Dataset Description & Simulation
+## 3. Technology Stack
 
-The project includes `generate_data.py`, which generates 90 days of hourly telemetry (8,640 records) across 4 campus facilities:
-1. **Academic Block A**: Lecture Halls & Classrooms.
-2. **Library & Computing Hub**: Central Study & Server Rooms (continuous baseload).
-3. **Science Complex**: Chemistry & Bio Labs (specialized equipment).
-4. **Administrative Block**: Faculty & Office Cabins.
-
-### Dataset Schema
-| Column Name | Data Type | Physical Meaning / Units |
-| :--- | :--- | :--- |
-| `timestamp` | Datetime | Telemetry measurement time (hourly frequency) |
-| `building` | String | Campus facility name |
-| `zone` | String | Functional zone inside facility |
-| `occupancy` | Integer | Headcount present in the zone (0 to 120 people) |
-| `temperature` | Float | Ambient outdoor temperature (16.0°C to 42.0°C) |
-| `humidity` | Float | Relative humidity (30.0% to 95.0%) |
-| `hour` | Integer | Hour of day (0 to 23) |
-| `day_of_week` | Integer | Day of week (0 = Monday, 6 = Sunday) |
-| `is_weekend` | Integer | Flag: 1 if Saturday or Sunday, else 0 |
-| `actual_power_kw` | Float | **Target Variable**: Measured power draw (kW) |
-| `is_anomaly` | Integer | *Ground-truth label for evaluation only (not used in features)* |
-| `anomaly_type` | String | Ground-truth waste category (e.g., Empty Room, Night HVAC) |
-
-> ⚠️ **Academic Simulation Notice**: The dataset is synthetically simulated using thermodynamics, occupancy distributions, and equipment load curves. Ground-truth anomaly labels are strictly isolated for evaluation and are **never** passed into feature matrices.
+| Layer | Technology |
+|---|---|
+| ML Pipeline | Python 3.14, Pandas, NumPy, Scikit-learn, XGBoost, Joblib |
+| Streamlit Dashboard | Streamlit, Plotly |
+| API Backend | FastAPI, Uvicorn |
+| Database | SQLite (built-in `sqlite3`) |
+| Authentication | JWT (`python-jose`), bcrypt 5.x |
+| Frontend | HTML5, Vanilla CSS, JavaScript, Chart.js |
+| Tests | Pytest, HTTPX |
 
 ---
 
-## ⚙️ 4. Feature Engineering
+## 4. Directory Structure
 
-To capture physical energy dynamics without data leakage:
-1. **Cooling Degree Demand (`cooling_need`)**:
-   $$\text{cooling\_need} = \max(0.0, \text{temperature} - 24.0)$$
-   HVAC chillers activate primarily when ambient temperature exceeds human comfort baselines (24°C).
-2. **Academic Business Hours (`is_business_hours`)**:
-   Binary flag set to `1` during Monday–Friday between 08:00 and 18:00.
-3. **Cyclical Clock Encoding (`hour_sin`, `hour_cos`)**:
-   Transforms 24-hour cycles into continuous trigonometric waves so the algorithm recognizes hour 23 (11:00 PM) and hour 0 (12:00 AM) as adjacent.
-   $$\text{hour\_sin} = \sin\left(\frac{2\pi \cdot \text{hour}}{24}\right), \quad \text{hour\_cos} = \cos\left(\frac{2\pi \cdot \text{hour}}{24}\right)$$
-4. **One-Hot Encoding**: Categorical variables (`building`, `zone`) encoded via Scikit-Learn `ColumnTransformer`.
+```
+DSML_mini/
+├── app.py                        ← Streamlit dashboard (standalone)
+├── generate_data.py              ← Synthetic dataset generator
+├── train_model.py                ← ML training pipeline
+├── utils.py                      ← Core ML utilities
+├── requirements.txt
+├── .env.example                  ← Environment variable template
+├── .gitignore
+│
+├── data/
+│   ├── energy_data.csv           ← Synthetic dataset (90 days, 8640 rows)
+│   └── wattwise.db               ← SQLite database (auto-created, gitignored)
+│
+├── models/
+│   ├── best_model.joblib         ← Trained XGBoost pipeline (652 KB)
+│   ├── isolation_forest.joblib   ← Isolation Forest model
+│   ├── model_comparison.csv      ← Benchmark results
+│   └── model_metadata.json       ← Metrics, features, thresholds
+│
+├── backend/                      ← FastAPI application
+│   ├── main.py                   ← App entry point
+│   ├── config.py                 ← Environment-based settings
+│   ├── database.py               ← SQLite schema + init
+│   ├── security.py               ← bcrypt + JWT
+│   ├── create_admin.py           ← CLI to create first admin
+│   ├── models/schemas.py         ← Pydantic request/response schemas
+│   ├── routers/
+│   │   ├── auth.py               ← /api/auth/* (login, register, /me)
+│   │   ├── energy.py             ← /api/energy/* (readings, dashboard, alerts)
+│   │   ├── ml.py                 ← /api/ml/* (predict, analyze)
+│   │   ├── admin.py              ← /api/admin/* (admin dashboard, meters)
+│   │   └── users.py              ← /api/users/* (user management)
+│   └── services/
+│       ├── ml_service.py         ← ML model integration
+│       └── simulator.py          ← Simulated sensor data provider
+│
+├── frontend/                     ← Static HTML/CSS/JS (served by FastAPI)
+│   ├── index.html                ← Landing page
+│   ├── auth.html                 ← Login page (real backend auth)
+│   ├── student-dashboard.html    ← Student module
+│   ├── admin-dashboard.html      ← Admin module
+│   ├── css/
+│   └── js/
+│       ├── api.js                ← Centralized API client
+│       ├── dashboard-init.js     ← Auth guard + chart helpers
+│       ├── data.js               ← JS simulation fallback
+│       ├── student.js            ← Student page logic
+│       └── admin.js              ← Admin page logic
+│
+└── tests/
+    ├── test_backend.py           ← 52 backend tests
+    ├── test_data.py              ← ML data generation tests
+    ├── test_detection.py         ← Waste detection tests
+    └── test_model.py             ← Model inference tests
+```
 
 ---
 
-## 🤖 5. Machine Learning Models & Results
+## 5. Prerequisites
 
-### Train/Test Split (Zero-Leakage)
-- **Train Period**: First 80% chronologically (6,912 records: Jan 1 to Mar 13, 2026).
-- **Test Period**: Final 20% chronologically (1,728 records: Mar 14 to Mar 31, 2026).
-- *Strict chronological splitting ensures the model does not predict the past using future information.*
-
-### Regression Benchmark Comparison
-All three models were evaluated on the identical, unseen chronological test set:
-
-| Model | MAE (kW) | RMSE (kW) | $R^2$ Score | MAPE (%) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Linear Regression (Baseline)** | 3.257 kW | 5.644 kW | 0.8922 | 13.97% |
-| **Random Forest Regressor** | 2.126 kW | 5.405 kW | 0.9011 | 10.35% |
-| **XGBoost Regressor (Champion)** | **2.099 kW** | **5.317 kW** | **0.9043** | **10.09%** |
-
-**XGBoost Regressor** achieved the highest $R^2$ score (0.9043) and lowest MAE (2.099 kW), and was saved as the primary production artifact.
+- **Python 3.11+** (tested on 3.14)
+- No external accounts, cloud services, or paid APIs required
 
 ---
 
-## 🔍 6. Energy Waste Detection Logic
+## 6. Quick Start
 
-### A. Contextual Residual-Based Detection
-1. Compute the model's regression residual:
-   $$\text{Residual} = \text{Actual Power (kW)} - \text{Predicted Baseline (kW)}$$
-2. Flag as **True Energy Waste** if:
-   $$\text{Residual} \ge \tau_{\text{residual}} \quad (\text{default: } 10.0\text{ kW}) \quad \text{AND} \quad \text{Occupancy} \le \tau_{\text{occupancy}} \quad (\text{default: } 5\text{ people})$$
-3. Compute financial loss in Indian Rupees:
-   $$\text{Wasted Energy (kWh)} = \text{Residual (kW)} \times 1\text{ hour}$$
-   $$\text{Financial Loss (₹)} = \text{Wasted Energy (kWh)} \times \text{Tariff Rate (₹8.50/kWh)}$$
+Run all commands from the project root (`c:\Users\rajas\DSML\DSML_mini`).
 
-### B. Contextual Detector vs. Isolation Forest Benchmark
-Evaluating both methods against the ground-truth test-set waste incidents:
+### Step 1 — Install dependencies
 
-| Anomaly Detection Method | Precision | Recall | F1-Score | Accuracy |
-| :--- | :---: | :---: | :---: | :---: |
-| **Contextual ML Residual Detector** | **0.9318** | **1.0000** | **0.9647** | **0.9983** |
-| **Isolation Forest (Unsupervised)** | 0.0128 | 0.0244 | 0.0168 | 0.9323 |
-
-#### Confusion Matrix for Contextual Detector:
-- **True Positives (TP)**: 41 (Waste correctly detected)
-- **False Positives (FP)**: 3
-- **True Negatives (TN)**: 1,684 (Normal operation correctly identified)
-- **False Negatives (FN)**: 0 (No waste incidents missed)
-
----
-
-## 💻 7. Installation and Execution
-
-### 1. Prerequisites
-Ensure Python 3.10+ is installed on your machine.
-
-### 2. Navigate to Project Directory
 ```powershell
-cd C:\Users\Netizens\.gemini\antigravity-ide\scratch\energy_waste_detective
-```
-
-### 3. Install Dependencies
-```bash
 pip install -r requirements.txt
 ```
 
-### 4. Step-by-Step Execution
+### Step 2 — (Optional) Configure environment
 
-#### Step A: Generate Synthetic Campus Dataset
-```bash
-python generate_data.py
+```powershell
+Copy-Item .env.example .env
+# Edit .env to set WATTWISE_SECRET_KEY to a strong random value:
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
-*Outputs: `data/energy_data.csv` (8,640 rows).*
 
-#### Step B: Train & Benchmark ML Models
-```bash
+### Step 3 — Generate ML dataset and train models
+
+> Skip if `data/energy_data.csv` and `models/best_model.joblib` already exist.
+
+```powershell
+python generate_data.py
 python train_model.py
 ```
-*Outputs: Trains Linear Regression, Random Forest, and XGBoost; benchmarks against Isolation Forest; saves artifacts to `models/`.*
 
-#### Step C: Run Unit & Pipeline Tests
-```bash
-python -m pytest -v
-```
-*Executes all 9 automated test cases covering data generator, physics feature engineering, chronological splitting, regression metrics, and anomaly detection rules.*
+### Step 4 — Create your first Admin account
 
-#### Step D: Launch the Interactive Streamlit Dashboard
-```bash
-python -m streamlit run app.py
+```powershell
+python backend/create_admin.py
 ```
-*Opens the web dashboard in your browser at `http://localhost:8501`.*
+You will be prompted for email, name, and password. No credentials are hardcoded.
+
+### Step 5 — Start the FastAPI backend
+
+```powershell
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The server starts at **http://localhost:8000** and:
+- Initialises the SQLite database automatically on first run.
+- Serves the frontend at `/`.
+- Provides API docs at `/docs`.
+
+### Step 6 — (Optional) Seed simulated data
+
+In a separate PowerShell window:
+
+```powershell
+# One-time historical backfill (30 days)
+python -m backend.services.simulator --days 30
+
+# Or run continuously (generates one reading per building every 30 s)
+python -m backend.services.simulator --loop --interval 30
+```
+
+### Step 7 — Open the application
+
+| URL | Purpose |
+|---|---|
+| http://localhost:8000 | WattWise landing page |
+| http://localhost:8000/auth.html | Login / Register |
+| http://localhost:8000/student-dashboard.html | Student dashboard |
+| http://localhost:8000/admin-dashboard.html | Admin dashboard |
+| http://localhost:8000/docs | Interactive API documentation |
+
+### Step 8 — (Optional) Run the Streamlit dashboard
+
+The original Streamlit app still works independently:
+
+```powershell
+streamlit run app.py
+```
 
 ---
 
-## 📁 8. Project Directory Structure
+## 7. Run Tests
 
+```powershell
+# All tests (ML + backend)
+python -m pytest tests/ -v
+
+# Backend only (52 tests)
+python -m pytest tests/test_backend.py -v
+
+# ML pipeline only
+python -m pytest tests/test_data.py tests/test_detection.py tests/test_model.py -v
 ```
-energy_waste_detective/
-├── app.py                      # Interactive Streamlit dashboard application
-├── generate_data.py            # Physics-based synthetic dataset generator
-├── train_model.py              # ML model training, benchmarking, and evaluation
-├── utils.py                    # Preprocessing, metrics, detection logic & costs
-├── requirements.txt            # Dependency manifest
-├── README.md                   # Complete documentation & viva defense guide
-├── data/
-│   └── energy_data.csv         # Generated 90-day hourly campus dataset
-├── models/
-│   ├── best_model.joblib       # Serialized champion XGBoost model pipeline
-│   ├── isolation_forest.joblib # Trained Isolation Forest baseline artifact
-│   ├── model_comparison.csv    # Benchmark table comparing regression models
-│   └── model_metadata.json     # Feature list, test metrics, and default thresholds
-└── tests/
-    ├── __init__.py
-    ├── test_data.py            # Unit tests for data generation and schema
-    ├── test_model.py           # Unit tests for ML features and inference
-    └── test_detection.py       # Unit tests for contextual waste logic
-```
+
+Tests use a **temporary isolated SQLite database** — your `data/wattwise.db` is never touched.
 
 ---
 
-## 🎓 9. Viva Questions & Project Defense Guide
+## 8. Create First Admin Account
 
-### Q1: Why did you use Regression + Residuals instead of direct Binary Classification?
-> **Answer**: Real campus metering systems rarely have labeled "waste" datasets. Training a classifier on historical data is impractical because operational waste is unlabelled. By training a **regression model** on contextual variables (weather, schedule, occupancy), the model learns the **expected baseline physics** of the building. The difference between what the building actually consumes and what physics/occupancy predicts it should consume reveals operational waste.
+```powershell
+python backend/create_admin.py
+```
 
-### Q2: Why did Isolation Forest perform poorly compared to the Contextual Detector?
-> **Answer**: Isolation Forest is an unsupervised density estimator. It isolates points that are rare in multidimensional space. For instance, a sudden power drop (breaker trip), an unusually cool morning, or a high-occupancy event are all statistically rare, so Isolation Forest flags them as anomalies. However, statistical rarity is **not** synonymous with electricity waste. Our Contextual Detector requires both an **excess positive residual** AND **zero/low occupancy**, yielding 93.2% precision compared to Isolation Forest's 1.3%.
+After the first admin is created, additional admins can be created via:
+- `POST /api/users/` endpoint (admin auth required)
+- Running `create_admin.py` again
 
-### Q3: How did you prevent Data Leakage?
-> **Answer**:
-> 1. We used a strict **chronological train/test split** (training on Jan 1 – Mar 13, testing on Mar 14 – Mar 31) rather than a random shuffle split, preventing future time steps from leaking into the past.
-> 2. Ground-truth evaluation labels (`is_anomaly`, `anomaly_type`) and the target variable (`actual_power_kw`) were strictly excluded from the feature matrix $X$.
-> 3. Encoders and standardizers were fitted exclusively inside an Scikit-Learn `Pipeline` during training and never fitted on test data.
-
-### Q4: How is financial waste calculated?
-> **Answer**: Telemetry is measured at hourly intervals. If a room consumes 40 kW when the model expects 10 kW, the excess is 30 kW. Over 1 hour, that equals $30\text{ kW} \times 1\text{ h} = 30\text{ kWh}$. Multiplying by the institutional commercial tariff (default ₹8.50 per kWh) gives an estimated financial loss of ₹255.00 for that single hour.
-
-### Q5: What are the main limitations of this system?
-> **Answer**:
-> 1. Telemetry is hourly; 15-minute sub-metering would capture short transient waste (e.g., lights left on during lunch breaks).
-> 2. Occupancy in the dataset is simulated; in real deployments, it requires integration with IoT PIR sensors, Wi-Fi connected device counts, or turnstile logs.
-> 3. Whole-building meters cannot differentiate whether excess power came from lighting or HVAC; circuit-level sub-metering would provide granular root-cause attribution.
+**No default credentials are hardcoded in the source code.**
 
 ---
 
-## 📜 License
-This project is open-source and available under the [MIT License](LICENSE).
+## 9. API Documentation
+
+Interactive Swagger UI is available at **http://localhost:8000/docs** while the server is running.
+
+### Key Endpoints
+
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| `GET` | `/api/health` | Public | System health check |
+| `POST` | `/api/auth/token` | Public | Login → JWT token |
+| `POST` | `/api/auth/register` | Public | Self-register as student |
+| `GET` | `/api/auth/me` | Any | Get own profile |
+| `GET` | `/api/energy/buildings` | Any | List campus buildings |
+| `GET` | `/api/energy/dashboard` | Any | KPI summary |
+| `GET` | `/api/energy/daily-trend` | Any | Daily energy trend |
+| `GET` | `/api/energy/hourly-profile` | Any | 24-hour power profile |
+| `POST` | `/api/energy/readings` | Any | Submit a meter reading |
+| `GET` | `/api/energy/anomalies` | Any | List waste events |
+| `GET` | `/api/energy/alerts` | Any | List alerts |
+| `GET` | `/api/ml/info` | Any | Loaded model details |
+| `POST` | `/api/ml/predict` | Any | Single power prediction |
+| `POST` | `/api/ml/analyze` | Any | Batch waste analysis |
+| `GET` | `/api/admin/dashboard` | Admin | Full admin summary |
+| `GET` | `/api/admin/meters` | Admin | Meter status |
+| `GET` | `/api/users/` | Admin | List all users |
+| `POST` | `/api/users/` | Admin | Create user with any role |
+| `PATCH` | `/api/users/{id}` | Admin | Update user role/status |
+
+---
+
+## 10. Authentication & Roles
+
+### How Authentication Works
+
+1. Client POSTs `{email, password}` to `/api/auth/token`
+2. Server validates credentials from SQLite using bcrypt
+3. Server returns a **JWT Bearer token** (expires after 60 minutes by default)
+4. Client includes `Authorization: Bearer <token>` on all subsequent requests
+5. Every protected endpoint validates the token server-side
+
+### Roles
+
+| Role | Permissions |
+|---|---|
+| `student` | View buildings, energy data, anomalies, alerts, own profile |
+| `admin` | All student permissions + user management, admin dashboard, meter status, anomaly acknowledgement |
+
+**Role enforcement is server-side.** A student cannot gain admin access by modifying JavaScript,
+localStorage, URL parameters, or request headers.
+
+### Token Security
+
+- Passwords are hashed with bcrypt (cost factor 12) with SHA-256 pre-hashing for passwords > 72 bytes.
+- Tokens are signed with HS256 using `WATTWISE_SECRET_KEY` from `.env`.
+- No passwords or hashes are ever returned in API responses.
+- Rate limiting: max 10 login attempts per minute per IP.
+
+---
+
+## 11. ML Pipeline
+
+### Detection Algorithm
+
+```
+residual_kw = actual_power_kw − predicted_power_kw
+is_waste = (residual_kw ≥ 10.0 kW) AND (occupancy ≤ 5 persons)
+```
+
+**Important distinction:**
+- **Anomaly** — statistical deviation detected by the model.
+- **Potential waste event** — anomaly with high residual AND low occupancy → flagged by WattWise.
+- **Confirmed waste** — requires on-site physical verification by facilities staff.
+
+WattWise reports *potential* waste events, not confirmed waste.
+
+### Model Performance (on held-out test set)
+
+| Model | MAE | RMSE | R² | MAPE |
+|---|---|---|---|---|
+| Linear Regression | 3.257 kW | 5.644 kW | 0.8922 | 13.97% |
+| Random Forest | 2.128 kW | 5.409 kW | 0.9010 | 10.36% |
+| **XGBoost** ✅ | **2.106 kW** | **5.330 kW** | **0.9038** | **10.07%** |
+
+| Detector | Precision | Recall | F1 |
+|---|---|---|---|
+| Contextual ML (WattWise) | 93.2% | 100% | **96.47%** |
+| Isolation Forest | 1.28% | 2.44% | 1.68% |
+
+---
+
+## 12. Known Limitations
+
+| Limitation | Notes |
+|---|---|
+| No real sensor data | All readings are labelled `data_source='simulated'` |
+| Streamlit app branding | `app.py` still shows "Building Energy Waste Detective" title |
+| No real-time WebSocket | Dashboard requires manual refresh or page reload |
+| Single flat electricity tariff | Real billing often uses time-of-day pricing |
+| Simulated anomaly injection | ~4% of idle-hour readings have injected waste spikes |
+| No HTTPS | Run behind a reverse proxy (nginx) for any real deployment |
+| No email notifications | Alert system is dashboard-only |
+
+---
+
+## Development Notes
+
+- The SQLite database is at `data/wattwise.db` by default. Set `WATTWISE_DATABASE_URL` in `.env` to change it.
+- The ML model at `models/best_model.joblib` is loaded once at startup. Retrain with `python train_model.py`.
+- The simulator and Streamlit app can run simultaneously alongside the FastAPI backend.
+- All API responses include `data_source_note: "Simulated campus telemetry"` where relevant.

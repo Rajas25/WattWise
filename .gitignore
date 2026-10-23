@@ -1,23 +1,42 @@
-# Byte-compiled / optimized / DLL files
+# ── Python bytecode ───────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
 
-# Pytest / testing artifacts
+# ── Testing & coverage ────────────────────────────────────────────────────────
 .pytest_cache/
 .coverage
 htmlcov/
+*.log
 
-# Environments
+# ── Environment & secrets ─────────────────────────────────────────────────────
 .env
-.venv
-env/
+# Keep .env.example (it contains only placeholders, no real secrets)
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
 venv/
+env/
 ENV/
 
-# Streamlit
-.streamlit/secrets.toml
+# ── SQLite database files ─────────────────────────────────────────────────────
+# The local database contains real user accounts — never commit it.
+data/wattwise.db
+data/wattwise.db-wal
+data/wattwise.db-shm
+# Keep data/energy_data.csv (synthetic, no PII)
 
-# OS generated files
+# ── Streamlit ─────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+.streamlit/
+
+# ── IDE and OS files ──────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+.vscode/
+*.swp
+*.swo
+
+# ── Temp / scratch files ──────────────────────────────────────────────────────
+check_db.py

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Analytics — WattWise Energy Detective</title>
+  <meta name="description" content="Administrator analytics module — analyze anomalies, ML model performance, financial impact, and building comparisons." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: var(--a-bg); }
+
+    /* Admin-specific color overrides */
+    .admin-page .kpi-card.purple::before { background: var(--a-secondary); }
+    .admin-page .kpi-card.amber::before  { background: #D97706; }
+    .sidebar--admin .sidebar-toggle { background: var(--a-sidebar-bg); }
+
+    /* Page sections */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* Model leaderboard */
+    .model-leaderboard {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-5);
+    }
+    @media(max-width:900px) { .model-leaderboard { grid-template-columns: 1fr; } }
+    .model-card {
+      background: #fff; border-radius: var(--radius-xl); border: 2px solid var(--neutral-200);
+      padding: var(--space-5); transition: all var(--transition-base); position: relative;
+    }
+    .model-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .model-card.best { border-color: var(--a-secondary); background: var(--a-selected-bg); }
+    .model-card.best::before { content:'🏆 Champion'; position:absolute; top:-12px; left:var(--space-4); font-size:10px; font-weight:800; background:var(--a-secondary); color:#fff; padding:2px var(--space-3); border-radius:var(--radius-full); text-transform:uppercase; letter-spacing:.07em; }
+    .model-name { font-size:var(--text-base); font-weight:var(--weight-bold); color:var(--a-primary); margin-bottom:var(--space-4); }
+    .model-metric { display:flex; justify-content:space-between; align-items:center; padding:var(--space-2) 0; border-bottom:1px solid var(--neutral-100); }
+    .model-metric:last-child { border-bottom:none; }
+    .mm-label { font-size:var(--text-xs); color:var(--neutral-500); font-weight:var(--weight-semibold); text-transform:uppercase; letter-spacing:.05em; }
+    .mm-value { font-size:var(--text-sm); font-weight:var(--weight-bold); color:var(--neutral-800); }
+    .mm-value.best-val { color:var(--a-secondary); }
+
+    /* Detection comparison */
+    .detection-compare { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5); }
+    @media(max-width:768px) { .detection-compare { grid-template-columns:1fr; } }
+    .detector-card {
+      background:#fff; border-radius:var(--radius-xl); border:2px solid var(--neutral-200);
+      padding:var(--space-5); transition:all var(--transition-base);
+    }
+    .detector-card.best { border-color:var(--a-secondary); }
+    .detector-name { font-size:var(--text-base); font-weight:var(--weight-bold); margin-bottom:var(--space-4); }
+    .metric-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3); }
+    .metric-row-label { font-size:var(--text-sm); color:var(--neutral-600); }
+    .metric-bar-wrap { flex:1; margin:0 var(--space-3); height:8px; background:var(--neutral-100); border-radius:var(--radius-full); overflow:hidden; }
+    .metric-bar-fill { height:100%; border-radius:var(--radius-full); transition:width 0.8s ease; }
+    .metric-row-val { font-size:var(--text-sm); font-weight:var(--weight-bold); min-width:48px; text-align:right; }
+
+    /* Confusion matrix */
+    .cm-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); margin-top:var(--space-4); }
+    .cm-cell { padding:var(--space-4); border-radius:var(--radius-md); text-align:center; }
+    .cm-cell-label { font-size:10px; color:var(--neutral-500); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:var(--space-2); }
+    .cm-cell-val   { font-size:var(--text-2xl); font-weight:800; }
+    .cm-tn { background:#ECFDF5; }  .cm-tn .cm-cell-val  { color:#065F46; }
+    .cm-fp { background:#FEF2F2; }  .cm-fp .cm-cell-val  { color:#991B1B; }
+    .cm-fn { background:#FEF2F2; }  .cm-fn .cm-cell-val  { color:#991B1B; }
+    .cm-tp { background:#DBEAFE; }  .cm-tp .cm-cell-val  { color:#1E40AF; }
+
+    /* Financial analysis */
+    .financial-formula {
+      background:#1E1030; color:#A5F3FC; padding:var(--space-5); border-radius:var(--radius-lg);
+      font-family:var(--font-mono); font-size:var(--text-sm); line-height:2;
+      border-left:3px solid #7C3AED;
+    }
+    .f-comment { color:#6B7280; }
+    .f-val     { color:#FDE68A; font-weight:700; }
+    .f-result  { color:#34D399; font-weight:700; }
+
+    /* Investigation table */
+    .inv-row {
+      display:grid; grid-template-columns:1.2fr 1.1fr 0.6fr 0.7fr 0.7fr 0.6fr 0.8fr 0.9fr auto;
+      gap:var(--space-2); align-items:center; padding:var(--space-3) var(--space-4);
+      border-bottom:1px solid var(--neutral-100); font-size:var(--text-xs); cursor:pointer;
+      transition:background var(--transition-fast);
+    }
+    .inv-row:hover { background:var(--a-selected-bg); }
+    .inv-row.header { font-weight:700; color:var(--neutral-500); background:var(--neutral-50); text-transform:uppercase; letter-spacing:.04em; cursor:default; }
+    @media(max-width:1100px) { .inv-row { grid-template-columns:1fr 1fr 1fr; } .inv-row .hide-md { display:none; } }
+
+    /* Dataset fields table */
+    .field-row { display:grid; grid-template-columns:1.5fr 1fr 2fr 1fr; gap:var(--space-3); padding:var(--space-3) var(--space-4); border-bottom:1px solid var(--neutral-100); font-size:var(--text-sm); }
+    .field-row.header { background:var(--neutral-50); font-size:var(--text-xs); font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--neutral-500); }
+    .field-name { font-family:var(--font-mono); color:var(--a-primary); font-weight:600; }
+    .field-eval-badge { font-size:10px; background:#FEF3C7; color:#92400E; padding:2px 6px; border-radius:var(--radius-full); font-weight:600; width:fit-content; }
+
+    /* Configuration sliders */
+    .config-section { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5); }
+    @media(max-width:768px) { .config-section { grid-template-columns:1fr; } }
+    .config-group { background:#fff; border:1.5px solid var(--neutral-200); border-radius:var(--radius-xl); padding:var(--space-5); }
+    .config-title { font-size:var(--text-sm); font-weight:700; color:var(--neutral-800); margin-bottom:var(--space-4); }
+    .config-row { margin-bottom:var(--space-4); }
+    .config-row label { display:flex; justify-content:space-between; align-items:center; font-size:var(--text-sm); color:var(--neutral-600); margin-bottom:var(--space-2); }
+    .config-row label strong { color:var(--a-primary); font-size:var(--text-base); }
+    input[type=range] { width:100%; accent-color:var(--a-secondary); }
+    .config-proto-note { background:#FFF7ED; border:1px solid #FDE68A; border-radius:var(--radius-md); padding:var(--space-3) var(--space-4); font-size:var(--text-xs); color:#92400E; margin-top:var(--space-4); }
+  </style>
+</head>
+<body class="admin-page">
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="app-layout">
+
+  <!-- ═══ SIDEBAR (Admin) ═══ -->
+  <aside class="sidebar sidebar--admin" id="sidebar" role="navigation" aria-label="Admin navigation">
+    <div class="sidebar-header">
+      <span class="sidebar-logo-icon">⚡</span>
+      <div>
+        <div class="sidebar-logo-text">WattWise</div>
+        <div class="sidebar-logo-sub">ADMIN MODULE</div>
+      </div>
+    </div>
+
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Analytics</div>
+      <button class="nav-item active" data-page="analytics" id="nav-analytics">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="10" height="10" x="3" y="3" rx="2"/><rect width="10" height="10" x="13" y="3" rx="2" opacity=".5"/><rect width="10" height="10" x="3" y="13" rx="2" opacity=".5"/><rect width="10" height="10" x="13" y="13" rx="2" opacity=".5"/></svg></span>
+        <span class="nav-item-text">Analytics Dashboard</span>
+      </button>
+      <button class="nav-item" data-page="investigation" id="nav-investigation">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+        <span class="nav-item-text">Waste Investigation</span>
+        <span class="nav-item-badge" id="admin-waste-badge">—</span>
+      </button>
+      <button class="nav-item" data-page="financial" id="nav-financial">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        <span class="nav-item-text">Financial Impact</span>
+      </button>
+      <button class="nav-item" data-page="buildings" id="nav-buildings">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+        <span class="nav-item-text">Building Comparison</span>
+      </button>
+      <div class="sidebar-section-label">ML & Data</div>
+      <button class="nav-item" data-page="models" id="nav-models">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 0 1 5 5v6a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M2 12a10 10 0 0 0 20 0"/></svg></span>
+        <span class="nav-item-text">Model Performance</span>
+      </button>
+      <button class="nav-item" data-page="dataset" id="nav-dataset">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></span>
+        <span class="nav-item-text">Dataset Overview</span>
+      </button>
+      <button class="nav-item" data-page="config" id="nav-config">
+        <span class="nav-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></span>
+        <span class="nav-item-text">Configuration</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="student-dashboard.html" class="sidebar-module-switcher">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 11H3M17 11L13 7M17 11L13 15"/></svg>
+        <span>Switch to Student</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN AREA ═══ -->
+  <div class="main-area" id="main-area">
+    <header class="app-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="header-breadcrumb">
+          <span class="breadcrumb-parent">WattWise Admin</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-current" id="breadcrumb-title">Analytics Dashboard</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-dataset-tag">⚠️ Simulated Data · 8,640 Records</div>
+        <div class="header-module-pill pill--admin">Admin</div>
+        <div class="header-avatar avatar--admin" title="Admin User">A</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ════════ PAGE: ANALYTICS DASHBOARD ════════ -->
+      <section id="page-analytics" class="page-section active">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:var(--space-4);margin-bottom:var(--space-5)">
+          <div>
+            <h1 class="page-title" style="color:var(--a-primary)">Analytics Dashboard</h1>
+            <p class="page-sub" style="margin-bottom:0">Campus energy waste overview · XGBoost prediction model · Contextual anomaly detector</p>
+          </div>
+          <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
+            <select class="filter-select" id="admin-building-filter">
+              <option>All Buildings</option>
+              <option>Academic Block A</option>
+              <option>Library &amp; Computing Hub</option>
+              <option>Science Complex</option>
+              <option>Administrative Block</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="notice-banner sim mb-5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span><strong>Academic Simulation:</strong> All data is synthetic (90 days, 8,640 hourly records, 4 simulated buildings). This frontend is not connected to the Python ML backend. Metrics reflect the documented evaluation results from <code>models/model_metadata.json</code>.</span>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid-4 mb-6" id="admin-kpis"></div>
+
+        <!-- Model accuracy card -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-6)">
+          <div class="kpi-card purple">
+            <div class="kpi-icon purple">🤖</div>
+            <div class="kpi-label">XGBoost R² Score</div>
+            <div class="kpi-value" style="color:var(--a-secondary)">0.9038</div>
+            <div class="kpi-sub">Test set · 1,728 records</div>
+          </div>
+          <div class="kpi-card amber">
+            <div class="kpi-icon amber">🎯</div>
+            <div class="kpi-label">Contextual Detector F1</div>
+            <div class="kpi-value" style="color:#D97706">0.9647</div>
+            <div class="kpi-sub">Precision 0.9318 · Recall 1.0000</div>
+          </div>
+          <div class="kpi-card purple">
+            <div class="kpi-icon purple">🔒</div>
+            <div class="kpi-label">Train/Test Protocol</div>
+            <div class="kpi-value" style="font-size:var(--text-lg)">Zero Leakage</div>
+            <div class="kpi-sub">Chronological 80/20 split</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid-2 mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📈 Actual vs. Predicted Power (14-Day Sample)</div></div>
+            <div style="height:280px;position:relative"><canvas id="admin-chart-main"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📊 Waste Incidents by Building</div></div>
+            <div style="height:280px;position:relative"><canvas id="admin-chart-incidents"></canvas></div>
+          </div>
+        </div>
+        <div class="grid-2 mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">💸 Estimated Financial Loss by Building</div></div>
+            <div style="height:260px;position:relative"><canvas id="admin-chart-loss"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">👥 Occupancy vs. Power (Scatter)</div></div>
+            <div style="height:260px;position:relative"><canvas id="admin-chart-occ"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Recent incidents table -->
+        <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--a-primary);margin-bottom:var(--space-4)">🚨 Recent Incidents Audit Log</h2>
+        <div class="data-table-wrap">
+          <div class="inv-row header">
+            <div>Timestamp</div>
+            <div>Building / Zone</div>
+            <div class="hide-md">Occ.</div>
+            <div class="hide-md">Actual kW</div>
+            <div class="hide-md">Predicted kW</div>
+            <div class="hide-md">Residual</div>
+            <div>Severity</div>
+            <div>Loss (₹)</div>
+            <div></div>
+          </div>
+          <div id="admin-incidents-table"></div>
+        </div>
+      </section>
+
+      <!-- ════════ PAGE: WASTE INVESTIGATION ════════ -->
+      <section id="page-investigation" class="page-section">
+        <h1 class="page-title" style="color:var(--a-primary)">🔍 Energy Waste Investigation</h1>
+        <p class="page-sub">Search and filter all detected anomalies. Click any row to open the incident detail panel.</p>
+
+        <div class="notice-banner info mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span><strong>Detection Rule:</strong> An incident is flagged when <code>Residual ≥ 10.0 kW</code> AND <code>Occupancy ≤ 5 people</code>. The residual threshold and occupancy limit are configurable in the Configuration page.</span>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label" for="inv-building">Building</label>
+            <select class="filter-select" id="inv-building">
+              <option>All Buildings</option>
+              <option>Academic Block A</option>
+              <option>Library &amp; Computing Hub</option>
+              <option>Science Complex</option>
+              <option>Administrative Block</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="inv-severity">Severity</label>
+            <select class="filter-select" id="inv-severity">
+              <option value="all">All</option>
+              <option value="High Waste">High</option>
+              <option value="Medium Waste">Medium</option>
+              <option value="Low Waste">Low</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="inv-sort">Sort By</label>
+            <select class="filter-select" id="inv-sort">
+              <option value="residual">Excess kW ↓</option>
+              <option value="cost">Loss ₹ ↓</option>
+              <option value="time">Latest First</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="inv-search">Search</label>
+            <input type="text" class="filter-input" id="inv-search" placeholder="Zone, building…" />
+          </div>
+          <button class="filter-reset" id="inv-reset">↺ Reset</button>
+        </div>
+
+        <div class="data-table-wrap mb-4">
+          <div class="inv-row header">
+            <div>Timestamp</div>
+            <div>Building / Zone</div>
+            <div class="hide-md">Occ.</div>
+            <div class="hide-md">Actual (kW)</div>
+            <div class="hide-md">Expected (kW)</div>
+            <div class="hide-md">Residual (kW)</div>
+            <div>Severity</div>
+            <div>Loss (₹)</div>
+            <div>Details</div>
+          </div>
+          <div id="inv-table-body"></div>
+        </div>
+        <div id="inv-pagination" style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--neutral-500)"></div>
+      </section>
+
+      <!-- ════════ PAGE: FINANCIAL IMPACT ════════ -->
+      <section id="page-financial" class="page-section">
+        <h1 class="page-title" style="color:var(--a-primary)">💸 Financial Impact Analysis</h1>
+        <p class="page-sub">Estimated financial losses from detected energy waste. Based on ₹8.50/kWh institutional tariff and hourly telemetry intervals.</p>
+
+        <div class="grid-4 mb-5" id="fin-kpis"></div>
+
+        <!-- Formula panel -->
+        <div class="financial-formula mb-5">
+          <div><span class="f-comment"># Financial Loss Calculation (from utils.py)</span></div>
+          <div>excess_kwh = residual_kw × <span class="f-val">1 hour</span>   <span class="f-comment"># Hourly telemetry interval</span></div>
+          <div>loss_inr   = excess_kwh × <span class="f-val">₹8.50/kWh</span> <span class="f-comment"># Institutional tariff</span></div>
+          <div>&nbsp;</div>
+          <div><span class="f-comment"># Example:</span> residual = 18.4 kW → excess = 18.4 kWh → loss = <span class="f-result">₹156.40</span></div>
+          <div>&nbsp;</div>
+          <div><span class="f-comment"># IMPORTANT: This is an ESTIMATE. It is not a verified utility-bill saving.</span></div>
+          <div><span class="f-comment"># Actual savings depend on physical verification and operational changes.</span></div>
+        </div>
+
+        <div class="grid-2 mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📊 Financial Loss by Building</div></div>
+            <div style="height:280px;position:relative"><canvas id="fin-chart-building"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📅 Weekly Financial Loss Trend</div></div>
+            <div style="height:280px;position:relative"><canvas id="fin-chart-weekly"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Incident-level table -->
+        <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--a-primary);margin-bottom:var(--space-4)">Top Incidents by Financial Impact</h2>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>Timestamp</th><th>Building</th><th>Zone</th>
+              <th>Excess kW</th><th>Excess kWh</th><th>Tariff</th><th>Est. Loss</th>
+            </tr></thead>
+            <tbody id="fin-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ════════ PAGE: BUILDING COMPARISON ════════ -->
+      <section id="page-buildings" class="page-section">
+        <h1 class="page-title" style="color:var(--a-primary)">🏢 Building Performance Comparison</h1>
+        <p class="page-sub">Compare the four simulated campus facilities on energy consumption, waste incidents, and financial impact.</p>
+
+        <div class="notice-banner info mb-5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span>Buildings are not ranked by "efficiency" — raw consumption figures depend on building size, function, and equipment. A higher consumption is expected for a server room vs. an administrative office. Use incidents and normalized metrics for fair comparison.</span>
+        </div>
+
+        <div id="building-compare-cards" class="mb-5"></div>
+
+        <div class="grid-2 mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">⚡ Total Energy Consumption by Building (kWh)</div></div>
+            <div style="height:280px;position:relative"><canvas id="bldg-chart-energy"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">💸 Estimated Financial Loss by Building</div></div>
+            <div style="height:280px;position:relative"><canvas id="bldg-chart-loss"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Comparison table -->
+        <div class="data-table-wrap">
+          <table class="data-table" id="bldg-compare-table">
+            <thead><tr>
+              <th>Building</th><th>Total Energy (kWh)</th><th>Avg Power (kW)</th>
+              <th>Waste Incidents</th><th>Excess Energy (kWh)</th><th>Est. Financial Loss</th>
+            </tr></thead>
+            <tbody id="bldg-compare-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ════════ PAGE: MODEL PERFORMANCE ════════ -->
+      <section id="page-models" class="page-section">
+        <h1 class="page-title" style="color:var(--a-primary)">🤖 Model Performance & Benchmarking</h1>
+        <p class="page-sub">Regression model comparison and anomaly detection benchmarking. Reference values from <code>models/model_metadata.json</code>.</p>
+
+        <div class="notice-banner info mb-5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span><strong>Zero Data Leakage:</strong> Models trained on chronological 80% (Jan 1–Mar 13, 2026, 6,912 records). Evaluated on final 20% (Mar 14–Mar 31, 1,728 records). Ground-truth labels were never included in feature matrices.</span>
+        </div>
+
+        <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--a-primary);margin-bottom:var(--space-4)">📊 Regression Model Leaderboard</h2>
+        <div class="model-leaderboard mb-5" id="model-cards"></div>
+
+        <div class="grid-2 mb-5">
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📊 MAE Comparison (lower is better)</div></div>
+            <div style="height:240px;position:relative"><canvas id="model-chart-mae"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header"><div class="chart-card-title">📈 R² Score (higher is better)</div></div>
+            <div style="height:240px;position:relative"><canvas id="model-chart-r2"></canvas></div>
+          </div>
+        </div>
+
+        <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--a-primary);margin-bottom:var(--space-4)">🔍 Anomaly Detection Comparison</h2>
+        <div class="detection-compare mb-5" id="detection-cards"></div>
+
+        <div class="chart-card">
+          <div class="chart-card-header"><div class="chart-card-title">🎓 Why Isolation Forest Fails at Energy Waste Detection</div></div>
+          <div style="padding:var(--space-4);background:var(--a-selected-bg);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--neutral-700);line-height:1.8">
+            <p><strong>Isolation Forest (Precision: 1.28%)</strong> is an unsupervised density estimator. It isolates any statistically rare point in the feature space — this includes power outages, extreme heat spikes, and packed-auditorium events. None of these represent electricity waste.</p>
+            <br/>
+            <p><strong>Contextual ML Detector (Precision: 93.18%)</strong> directly answers the correct question: <em>"Is there excess power draw specifically when the space is empty?"</em> The dual condition (residual ≥ threshold AND occupancy ≤ limit) eliminates false alarms from legitimate high-load events, achieving F1 = 0.9647 on the test set.</p>
+            <br/>
+            <p style="color:var(--neutral-500);font-size:var(--text-xs)">⚠️ High accuracy (0.9323 for Isolation Forest) can be misleading in imbalanced datasets where anomalies are rare. Always evaluate precision, recall, and F1-score for anomaly detection tasks.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════ PAGE: DATASET OVERVIEW ════════ -->
+      <section id="page-dataset" class="page-section">
+        <h1 class="page-title" style="color:var(--a-primary)">🗄️ Dataset Overview & Data Quality</h1>
+        <p class="page-sub">Synthetic campus telemetry specification — generated by <code>generate_data.py</code>.</p>
+
+        <div class="notice-banner sim mb-5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span><strong>Academic Simulation Notice:</strong> This project uses synthetic campus telemetry generated using thermodynamics equations, occupancy distributions, and equipment load curves. Ground-truth anomaly labels (<code>is_anomaly</code>, <code>anomaly_type</code>) are strictly isolated for evaluation and are <strong>never</strong> passed into feature matrices. Results demonstrate the methodology and do not represent verified readings from a real campus deployment.</span>
+        </div>
+
+        <div class="grid-4 mb-5">
+          <div class="kpi-card blue"><div class="kpi-icon blue">📋</div><div class="kpi-label">Total Records</div><div class="kpi-value">8,640</div><div class="kpi-sub">90 days × 24 hrs × 4 buildings</div></div>
+          <div class="kpi-card teal"><div class="kpi-icon teal">📅</div><div class="kpi-label">Time Range</div><div class="kpi-value" style="font-size:var(--text-lg)">Jan–Mar 2026</div><div class="kpi-sub">90 days · Hourly frequency</div></div>
+          <div class="kpi-card purple"><div class="kpi-icon purple">🏢</div><div class="kpi-label">Buildings</div><div class="kpi-value">4</div><div class="kpi-sub">Simulated campus facilities</div></div>
+          <div class="kpi-card green"><div class="kpi-icon green">🔬</div><div class="kpi-label">Missing Values</div><div class="kpi-value">0</div><div class="kpi-sub">Complete synthetic dataset</div></div>
+        </div>
+
+        <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--a-primary);margin-bottom:var(--space-4)">📋 Dataset Schema</h2>
+        <div class="data-table-wrap mb-5">
+          <div class="field-row header">
+            <div>Column Name</div><div>Data Type</div><div>Description</div><div>Role</div>
+          </div>
+          <div id="dataset-schema"></div>
+        </div>
+
+        <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--a-primary);margin-bottom:var(--space-4)">🏢 Buildings & Zones</h2>
+        <div class="grid-2 mb-5" id="dataset-buildings"></div>
+      </section>
+
+      <!-- ════════ PAGE: CONFIGURATION ════════ -->
+      <section id="page-config" class="page-section">
+        <h1 class="page-title" style="color:var(--a-primary)">⚙️ Detection Configuration</h1>
+        <p class="page-sub">Adjust detection thresholds and tariff assumptions. Changes preview how the configuration would look — the actual Python model is not modified from this interface.</p>
+
+        <div class="config-section mb-5" id="config-controls"></div>
+
+        <div class="chart-card">
+          <div class="chart-card-header"><div class="chart-card-title">📊 Impact Preview: Incidents at Different Residual Thresholds</div></div>
+          <div style="height:260px;position:relative"><canvas id="config-chart-threshold"></canvas></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Incident Drawer -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="incident-drawer" id="incident-drawer" aria-label="Incident details">
+  <div class="drawer-header">
+    <span class="drawer-title">🔍 Incident Details</span>
+    <button class="drawer-close" id="drawer-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer-content"></div>
+</aside>
+
+
+<script src="js/api.js"></script>
+<script src="js/dashboard-init.js"></script>
+<script src="js/data.js"></script>
+<script src="js/admin.js"></script>
+<script>
+/* ── Admin API Data Integration ── */
+(async function loadAdminApiData() {
+  // Admin-only guard (role enforced server-side; this is UI convenience)
+  if (!WW.Auth.isAdmin()) {
+    WW.showToast('Admin access required. Redirecting…', 'error');
+    setTimeout(() => { window.location.href = '/student-dashboard.html'; }, 1500);
+    return;
+  }
+
+  try {
+    // Fetch admin dashboard summary
+    const dash = await WW.adminApi.dashboard();
+    if (dash) {
+      document.querySelectorAll('[data-kpi="total-users"]').forEach(el => el.textContent = dash.total_users);
+      document.querySelectorAll('[data-kpi="total-buildings"]').forEach(el => el.textContent = dash.total_buildings);
+      document.querySelectorAll('[data-kpi="total-readings"]').forEach(el => el.textContent = dash.total_readings?.toLocaleString('en-IN'));
+      document.querySelectorAll('[data-kpi="total-anomalies"]').forEach(el => el.textContent = dash.total_anomalies?.toLocaleString('en-IN'));
+      document.querySelectorAll('[data-kpi="unread-alerts"]').forEach(el => el.textContent = dash.unread_alerts);
+      document.querySelectorAll('[data-kpi="waste-inr"]').forEach(el => el.textContent = WW.formatINR(dash.total_waste_inr || 0));
+      document.querySelectorAll('[data-kpi="waste-kwh"]').forEach(el => el.textContent = WW.formatKWh(dash.total_waste_kwh || 0));
+    }
+
+    // Run ML analysis
+    WW.mlApi.analyze('', 30).then(res => {
+      if (res?.new_anomalies_saved > 0) {
+        WW.showToast(`⚡ ML analysis: ${res.new_anomalies_saved} new waste events detected`, 'warning');
+      }
+    }).catch(() => {});
+
+    // Render charts
+    await renderDailyTrendChart('api-admin-daily-chart', null, 30);
+    await renderBuildingStatsChart('api-admin-building-chart', 30);
+
+    // Load waste table
+    await loadWasteTable('api-admin-waste-tbody', null, 30, 100);
+
+    // Load alerts
+    await loadAlerts('api-admin-alerts-container', 20);
+
+    // Load user list for user management section
+    const users = await WW.adminApi.listUsers();
+    const usersTbody = document.getElementById('api-users-tbody');
+    if (usersTbody && users) {
+      usersTbody.innerHTML = users.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.full_name}</td>
+          <td>${u.email}</td>
+          <td><span class="badge" style="background:${u.role==='admin'?'rgba(139,92,246,.2)':'rgba(56,189,248,.2)'};
+            color:${u.role==='admin'?'#a78bfa':'#38bdf8'};border-radius:4px;padding:.2rem .5rem;font-size:.75rem;font-weight:700">
+            ${u.role}</span></td>
+          <td>${u.is_active ? '✅ Active' : '❌ Inactive'}</td>
+          <td style="font-size:.75rem;color:#64748b">${u.created_at?.slice(0,10)}</td>
+        </tr>
+      `).join('');
+    }
+
+  } catch (err) {
+    console.warn('[WattWise Admin API]', err.message);
+    WW.showToast('Admin data: ' + err.message, 'warning');
+  }
+})();
+</script>
+</body>
+</html>
+
